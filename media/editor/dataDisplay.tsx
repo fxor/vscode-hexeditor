@@ -556,12 +556,66 @@ const DataCell: React.FC<{
 				// for a range, and the edit must be undoable, but we aren't ensured to
 				// have the data paged in for the range. So make a separate request
 				// that will result in the extension host sending the edit to us.
+				const selectionRanges = ctx.getSelectionRanges();
 				select.messageHandler
 					.sendRequest<DeleteAcceptedMessage>({
 						type: MessageType.RequestDeletes,
-						deletes: ctx.getSelectionRanges().map(r => ({ start: r.start, end: r.end })),
+						deletes: selectionRanges.map(r => ({ start: r.start, end: r.end })),
 					})
-					.then(() => ctx.setSelectionRanges([]));
+					.then(() => {
+						if (selectionRanges.length > 0) {
+							const newPosition = selectionRanges[0].start;
+							ctx.focusedElement = new FocusedElement(
+								ctx.focusedElement?.char ?? false,
+								newPosition,
+							);
+							ctx.setSelectionRanges([Range.single(newPosition)]);
+						} else {
+							ctx.setSelectionRanges([]);
+						}
+					});
+			}
+
+			if (e.key === "Backspace") {
+				const selectionRanges = ctx.getSelectionRanges();
+				const hasMultiByteSelection = selectionRanges.some(r => r.size > 1);
+
+				if (hasMultiByteSelection || editMode === HexDocumentEditOp.Replace) {
+					// Delete selected bytes (same as Delete key)
+					select.messageHandler
+						.sendRequest<DeleteAcceptedMessage>({
+							type: MessageType.RequestDeletes,
+							deletes: selectionRanges.map(r => ({ start: r.start, end: r.end })),
+						})
+						.then(() => {
+							if (selectionRanges.length > 0) {
+								const newPosition = selectionRanges[0].start;
+								ctx.focusedElement = new FocusedElement(
+									ctx.focusedElement?.char ?? false,
+									newPosition,
+								);
+								ctx.setSelectionRanges([Range.single(newPosition)]);
+							} else {
+								ctx.setSelectionRanges([]);
+							}
+						});
+				} else {
+					// In insert mode: delete byte before cursor
+					const currentByte = ctx.focusedElement?.byte ?? offset;
+					if (currentByte > 0) {
+						select.messageHandler
+							.sendRequest<DeleteAcceptedMessage>({
+								type: MessageType.RequestDeletes,
+								deletes: [{ start: currentByte - 1, end: currentByte }],
+							})
+							.then(() => {
+								const newPosition = currentByte - 1;
+								ctx.focusedElement = ctx.focusedElement?.shift(-1);
+								ctx.setSelectionRanges([Range.single(newPosition)]);
+							});
+					}
+				}
+				return;
 			}
 
 			let newValue = isChar && e.key.length === 1 ? e.key.charCodeAt(0) : parseHexDigit(e.key);

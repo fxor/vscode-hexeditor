@@ -1,3 +1,21 @@
+Fork of [microsoft/vscode-hexeditor](https://github.com/microsoft/vscode-hexeditor) with the following modifications:
+
+- Fix issue with z-index of the find widget that made it appear under the data inspector
+- Add support for deleting bytes using the `backspace` key
+
+Install steps:
+
+```bash
+git clone https://github.com/fxor/vscode-hexeditor.git
+cd vscode-hexeditor
+
+npm install
+vsce package
+code --install-extension hexeditor-*.vsix
+```
+
+# Original README
+
 A custom editor extension for Visual Studio Code which provides a hex editor for viewing and manipulating files in their raw hexadecimal representation.
 
 ## Features
@@ -34,4 +52,4 @@ Another option is to give the data inspector a dedicated activity bar entry on t
 
 ## Known Issues
 
-To track existing issues or report a new one, please visit the GitHub Issues page at https://github.com/microsoft/vscode-hexeditor/issues
+To track existing issues or report a new one, please visit the GitHub Issues page at <https://github.com/microsoft/vscode-hexeditor/issues>
